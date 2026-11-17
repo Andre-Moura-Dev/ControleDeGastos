@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "FinFlow",
+    "slug": "finflow-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#faf8ff"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5aac7a19-ef3b-4698-a206-2c410695532b"
+      }
+    }
+  }
+}
