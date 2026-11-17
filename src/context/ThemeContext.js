@@ -34,7 +34,7 @@ export function ThemeProvider({ children }) {
     toggleTheme: () => setTheme((current) => current === 'light' ? 'dark' : 'light'),
   }), [theme]);
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return <ThemeContext.Provider value={value}>{loaded ? children : null}</ThemeContext.Provider>;
 }
 
 export function useAppTheme() {

@@ -12,6 +12,7 @@ export default function HomeScreen({ goTo }) {
   const [hidden, setHidden] = useState(false);
   const spent = totals.expenses;
   const budgetTotal = budgets.reduce((s, b) => s + b.limit, 0);
+  const budgetUsage = budgetTotal > 0 ? spent / budgetTotal * 100 : 0;
   const recent = transactions.slice(0, 4);
 
   return <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 28 }} showsVerticalScrollIndicator={false}>
@@ -59,9 +60,9 @@ export default function HomeScreen({ goTo }) {
     <Card style={{ marginBottom: 17 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
         <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Orçamento mensal</Text>
-        <Text style={{ color: colors.primary, fontWeight: '700' }}>{Math.min(100, Math.round(spent / budgetTotal * 100))}% usado</Text>
+        <Text style={{ color: colors.primary, fontWeight: '700' }}>{Math.min(100, Math.round(budgetUsage))}% usado</Text>
       </View>
-      <ProgressBar value={spent / budgetTotal * 100} />
+      <ProgressBar value={budgetUsage} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 9 }}>
         <Text style={{ color: colors.muted, fontSize: 12 }}>Gasto: {money(spent)}</Text>
         <Text style={{ color: colors.muted, fontSize: 12 }}>Previsto: {money(budgetTotal)}</Text>

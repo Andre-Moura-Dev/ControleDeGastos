@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Field } from '../components/UI';
 import { useAppTheme } from '../context/ThemeContext';
 import { useFinance } from '../context/FinanceContext';
+import { isValidIsoDate, localIsoDate, parseAmount } from '../utils';
 
 const categories = [
   { name: 'Alimentação', icon: 'restaurant-outline' },
@@ -23,13 +24,14 @@ export default function AddTransactionScreen({ initialType = 'expense', onDone, 
   const [amount, setAmount] = useState('');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Alimentação');
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(localIsoDate());
   const [account, setAccount] = useState('Conta principal');
-  const parsedAmount = useMemo(() => Number(amount.replace(',', '.')), [amount]);
+  const parsedAmount = useMemo(() => parseAmount(amount), [amount]);
 
   const save = () => {
     if (!title.trim()) return Alert.alert('Descrição necessária', 'Informe uma descrição para a transação.');
-    if (!parsedAmount || parsedAmount <= 0) return Alert.alert('Valor inválido', 'Informe um valor maior que zero.');
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return Alert.alert('Valor inválido', 'Informe um valor maior que zero.');
+    if (!isValidIsoDate(date)) return Alert.alert('Data inválida', 'Informe uma data válida no formato AAAA-MM-DD.');
     if (type === 'transfer') return Alert.alert('Transferência', 'A transferência está representada na interface. Para este protótipo, cadastre receitas e despesas.');
     addTransaction({ title: title.trim(), category: type === 'income' ? (category === 'Alimentação' ? 'Renda extra' : category) : category, type, amount: parsedAmount, date, account });
     Alert.alert('Tudo certo!', 'Transação adicionada ao FinFlow.');

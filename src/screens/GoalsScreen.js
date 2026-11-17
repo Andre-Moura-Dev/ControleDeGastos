@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Alert, TextInput } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { Card, ProgressBar, SectionTitle } from '../components/UI';
 import { useAppTheme } from '../context/ThemeContext';
-import { money } from '../utils';
+import { money, parseAmount } from '../utils';
 import { useFinance } from '../context/FinanceContext';
 
 export default function GoalsScreen() {
@@ -12,11 +12,31 @@ export default function GoalsScreen() {
   const [showNew, setShowNew] = useState(false);
   const [goalName, setGoalName] = useState('');
   const [goalTarget, setGoalTarget] = useState('');
+  const [editingBudget, setEditingBudget] = useState(null);
+  const [budgetValue, setBudgetValue] = useState('');
+  const budgetTotal = budgets.reduce((sum, budget) => sum + budget.limit, 0);
+  const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const budgetUsage = budgetTotal > 0 ? Math.min(100, Math.round(totalExpenses / budgetTotal * 100)) : 0;
   const spentFor = (name) => transactions.filter(t => t.type === 'expense' && (t.category === name || (name.startsWith('Lazer') && t.category === 'Lazer') || (name.startsWith('Moradia') && t.category === 'Moradia'))).reduce((s, t) => s + t.amount, 0);
 
+  const beginBudgetEdit = (budget) => {
+    setEditingBudget(budget);
+    setBudgetValue(String(budget.limit));
+  };
+
+  const saveBudgetLimit = () => {
+    const limit = parseAmount(budgetValue);
+    if (!editingBudget || !Number.isFinite(limit) || limit <= 0) {
+      return Alert.alert('Limite inválido', 'Informe um valor maior que zero.');
+    }
+    updateBudget(editingBudget.id, limit);
+    setEditingBudget(null);
+    setBudgetValue('');
+  };
+
   const create = () => {
-    const target = Number(goalTarget.replace(',', '.'));
-    if (!goalName.trim() || !target || target <= 0) return Alert.alert('Confira os dados', 'Informe o nome da meta e um valor válido.');
+    const target = parseAmount(goalTarget);
+    if (!goalName.trim() || !Number.isFinite(target) || target <= 0) return Alert.alert('Confira os dados', 'Informe o nome da meta e um valor válido.');
     addGoal({ name: goalName.trim(), current: 0, target, icon: 'flag-outline' });
     setGoalName(''); setGoalTarget(''); setShowNew(false);
   };
@@ -25,14 +45,14 @@ export default function GoalsScreen() {
     <Text style={{ color: colors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>PLANEJAMENTO FINANCEIRO</Text>
     <Text style={{ color: colors.text, fontSize: 25, fontWeight: '800', marginTop: 4, marginBottom: 16 }}>Orçamentos e metas</Text>
     <Card style={{ marginBottom: 20 }}>
-      <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>● SAÚDE FINANCEIRA GERAL</Text>
+      <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 12 }}>● USO DOS ORÇAMENTOS</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
         <View>
           <Text style={{ color: colors.text, fontSize: 27, fontWeight: '800' }}>{money(transactions.filter(t => t.type === 'expense').reduce((s,t) => s+t.amount,0))}</Text>
           <Text style={{ color: colors.muted, fontSize: 12 }}>Total de despesas registradas</Text>
         </View>
         <View style={{ width: 62, height: 62, borderRadius: 31, borderWidth: 6, borderColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: colors.primary, fontWeight: '800' }}>59%</Text>
+          <Text style={{ color: colors.primary, fontWeight: '800' }}>{budgetUsage}%</Text>
         </View>
       </View>
       <View style={{ backgroundColor: colors.surfaceLow, padding: 12, borderRadius: 12, marginTop: 15 }}>
@@ -41,10 +61,29 @@ export default function GoalsScreen() {
       </View>
     </Card>
     <SectionTitle title="Limites por categoria" action="Ajustar" onAction={() => Alert.alert('Limites', 'Toque em um limite para ajustar seu valor.')} />
+    {editingBudget ? <Card style={{ marginBottom: 12 }}>
+      <Text style={{ color: colors.text, fontWeight: '800', marginBottom: 10 }}>Novo limite: {editingBudget.name}</Text>
+      <TextInput
+        value={budgetValue}
+        onChangeText={setBudgetValue}
+        keyboardType="decimal-pad"
+        placeholder="Valor do limite"
+        placeholderTextColor={colors.muted}
+        style={{ borderWidth: 1, borderColor: colors.outline, borderRadius: 12, padding: 12, marginBottom: 10, color: colors.text, backgroundColor: colors.surface }}
+      />
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <TouchableOpacity onPress={saveBudgetLimit} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 12, padding: 13, alignItems: 'center' }}>
+          <Text style={{ color: colors.onPrimary, fontWeight: '800' }}>Salvar limite</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setEditingBudget(null)} style={{ flex: 1, backgroundColor: colors.surfaceMid, borderRadius: 12, padding: 13, alignItems: 'center' }}>
+          <Text style={{ color: colors.text, fontWeight: '700' }}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
+    </Card> : null}
     {budgets.map(b => {
       const spent = spentFor(b.name);
-      const percent = spent / b.limit * 100;
-      return <TouchableOpacity key={b.id} onPress={() => Alert.prompt ? Alert.prompt('Novo limite', `Limite para ${b.name}`, value => { const n = Number(String(value).replace(',', '.')); if (n > 0) updateBudget(b.id, n); }, 'plain-text', String(b.limit)) : Alert.alert('Ajustar limite', 'A edição de limite está disponível no iOS; no Android, podemos incluir um campo dedicado na próxima etapa.')} activeOpacity={0.8}>
+      const percent = b.limit > 0 ? spent / b.limit * 100 : 0;
+      return <TouchableOpacity key={b.id} accessibilityRole="button" accessibilityLabel={`Editar limite de ${b.name}`} onPress={() => beginBudgetEdit(b)} activeOpacity={0.8}>
         <Card style={{ marginBottom: 11 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
             <View style={{ flex: 1 }}>

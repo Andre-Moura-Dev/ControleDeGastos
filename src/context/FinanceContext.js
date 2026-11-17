@@ -46,9 +46,9 @@ export function FinanceProvider({ children }) {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const data = JSON.parse(raw);
-          if (data.transactions) setTransactions(data.transactions);
-          if (data.budgets) setBudgets(data.budgets);
-          if (data.goals) setGoals(data.goals);
+          if (Array.isArray(data.transactions)) setTransactions(data.transactions);
+          if (Array.isArray(data.budgets)) setBudgets(data.budgets);
+          if (Array.isArray(data.goals)) setGoals(data.goals);
         }
       } catch (error) {
         console.warn('Não foi possível carregar os dados salvos:', error);
@@ -83,7 +83,7 @@ export function FinanceProvider({ children }) {
 
   return (
     <FinanceContext.Provider value={{ transactions, budgets, goals, totals, addTransaction, addGoal, updateBudget }}>
-      {children}
+      {loaded ? children : null}
     </FinanceContext.Provider>
   );
 }
