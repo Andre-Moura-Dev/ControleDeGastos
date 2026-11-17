@@ -14,7 +14,8 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#faf8ff"
-      }
+      },
+      "package": "com.andremoura.finflowapp"
     },
     "plugins": [
       "expo-font"
